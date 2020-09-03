@@ -31,11 +31,17 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+enum FileTypes { mp3, mp4, pdf, jpg, png }
+
 class _MyHomePageState extends State<MyHomePage> {
   final imgUrl = "http://www.ddegjust.ac.in/studymaterial/bba/bba-104.pdf";
   bool downloading = false;
   var progress = "";
   final downloadLink = TextEditingController();
+  final file_name = TextEditingController();
+  bool isInitializingMemory = false;
+  FileTypes type = FileTypes.jpg;
+  String fileType;
 
   void getPermission() async {
     print("get permission");
@@ -55,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-          child: downloading
+          child: downloading && isInitializingMemory
               ? Container(
                   height: 150.0,
                   width: 200.0,
@@ -74,27 +80,147 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 )
+              /*: !downloading && isInitializingMemory
+                  ? Center(
+                      child: Text("Waiting for download..."),
+                    )*/
               : Container(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: MediaQuery.of(context).size.width*0.8,
-                        child: TextField(
-
-                          autofocus: true,
-                          enableInteractiveSelection: true,
-                          decoration: InputDecoration(hintText: "paste download link there"),
-                          controller: downloadLink,
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextField(
+                              autofocus: true,
+                              enableInteractiveSelection: true,
+                              decoration: InputDecoration(hintText: "paste download link there", labelText: "Link"),
+                              controller: downloadLink,
+                            ),
+                            TextField(
+                              autofocus: true,
+                              enableInteractiveSelection: true,
+                              decoration: InputDecoration(hintText: "paste desired file name", labelText: "name"),
+                              controller: file_name,
+                            ),
+                          ],
                         ),
                       ),
                       RaisedButton(
                         onPressed: () {
-                          if(downloadLink.text == null)
+                          if (downloadLink.text == null)
                             print("can't download");
                           else
-                          downloadFile(downloadLink.text);
+                            downloadFile(downloadLink.text, file_name.text, fileType);
                         },
                         child: Text("DOWNLOAD"),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Row(
+                            children: [
+                              Radio(
+                                value: FileTypes.jpg,
+                                groupValue: type,
+                                onChanged: (FileTypes value) {
+                                  setState(() {
+                                    type = value;
+                                    fileType = "jpg";
+                                  });
+                                },
+                              ),
+                              Text(".jpg",  style: TextStyle(
+                                  fontWeight: FontWeight.bold
+                              ),),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Radio(
+                                value: FileTypes.pdf,
+                                groupValue: type,
+                                onChanged: (FileTypes value) {
+                                  setState(() {
+                                    type = value;
+                                    fileType = "pdf";
+
+                                  });
+
+                                },
+                              ),
+                              Text(".pdf", style: TextStyle(
+                                  fontWeight: FontWeight.bold
+                              ),),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Row(
+                            children: [
+                              Radio(
+                                value: FileTypes.png,
+                                groupValue: type,
+                                onChanged: (FileTypes value) {
+                                  setState(() {
+                                    type = value;
+                                    fileType = "png";
+
+                                  });
+                                },
+                              ),
+                              Text(".png", style: TextStyle(
+                                  fontWeight: FontWeight.bold
+                              ),),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Radio(
+                                value: FileTypes.mp3,
+                                groupValue: type,
+                                onChanged: (FileTypes value) {
+                                  setState(() {
+                                    type = value;
+                                    fileType = "mp3";
+
+                                  });
+                                },
+                              ),
+                              Text(".mp3", style: TextStyle(
+                                  fontWeight: FontWeight.bold
+                              ),),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Radio(
+                                value: FileTypes.mp4,
+                                groupValue: type,
+                                onChanged: (FileTypes value) {
+                                  setState(() {
+                                    type = value;
+                                    fileType = "mp4";
+
+                                  });
+                                },
+                              ),
+                              Text(".mp4",  style: TextStyle(
+                                fontWeight: FontWeight.bold
+                              ),),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -103,14 +229,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   //endregion download image
-  Future<void> downloadFile(String downlaodLink) async {
+  Future<void> downloadFile(String downlaodLink, String file_name, String fileType) async {
     Dio dio = Dio();
 
     try {
       var externalDirectoryPath = await ExtStorage.getExternalStoragePublicDirectory(ExtStorage.DIRECTORY_DOWNLOADS);
       print(externalDirectoryPath);
+      /*setState(() {
+        isInitializingMemory = true;
+      });*/
 
-      await dio.download(downlaodLink, "${externalDirectoryPath}/myimage.pdf", onReceiveProgress: (rec, total) {
+      await dio.download(downlaodLink, "$externalDirectoryPath/$file_name.$fileType", onReceiveProgress: (rec, total) {
         print("Rec: $rec,  Total: $total");
         setState(() {
           downloading = true;

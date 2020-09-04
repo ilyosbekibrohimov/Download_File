@@ -2,6 +2,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'dart:async';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ext_storage/ext_storage.dart';
 
 void main() {
@@ -12,12 +13,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'File Downloader'),
     );
   }
 }
@@ -34,7 +36,6 @@ class MyHomePage extends StatefulWidget {
 enum FileTypes { mp3, mp4, pdf, jpg, png }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final imgUrl = "http://www.ddegjust.ac.in/studymaterial/bba/bba-104.pdf";
   bool downloading = false;
   var progress = "";
   final downloadLink = TextEditingController();
@@ -46,6 +47,27 @@ class _MyHomePageState extends State<MyHomePage> {
   void getPermission() async {
     print("get permission");
     await Permission.storage.request();
+  }
+
+  Widget getViews(String name, FileTypes fixedType, FileTypes relativeType) {
+    return Row(
+      children: [
+        Radio(
+          value: relativeType,
+          groupValue: fixedType,
+          onChanged: (FileTypes value) {
+            setState(() {
+              fixedType = value;
+              fileType = "$name";
+            });
+          },
+        ),
+        Text(
+          ".$name",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
   }
 
   @override
@@ -61,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-          child: downloading && isInitializingMemory
+          child: downloading
               ? Container(
                   height: 150.0,
                   width: 200.0,
@@ -80,10 +102,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 )
-              /*: !downloading && isInitializingMemory
-                  ? Center(
-                      child: Text("Waiting for download..."),
-                    )*/
               : Container(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -110,12 +128,23 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       RaisedButton(
                         onPressed: () {
-                          if (downloadLink.text == null)
-                            print("can't download");
+                          if (downloadLink.text.length == 0 || file_name.text.length == 0)
+                            Fluttertoast.showToast(msg: "empty name/link", toastLength: Toast.LENGTH_SHORT, gravity: ToastGravity.BOTTOM, timeInSecForIosWeb: 1, backgroundColor: Colors.black26, textColor: Colors.white, fontSize: 16.0);
                           else
                             downloadFile(downloadLink.text, file_name.text, fileType);
                         },
                         child: Text("DOWNLOAD"),
+                        textColor: Colors.white,
+                        color: Colors.blue,
+                      ),
+                      Container(
+                        margin: EdgeInsets.only(top: 10.0),
+                        child: Text(
+                          "File types:",
+                          style: TextStyle(
+                            fontSize: 30.0,
+                          ),
+                        ),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -132,9 +161,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   });
                                 },
                               ),
-                              Text(".jpg",  style: TextStyle(
-                                  fontWeight: FontWeight.bold
-                              ),),
+                              Text(
+                                ".jpg",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                           Row(
@@ -146,14 +176,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   setState(() {
                                     type = value;
                                     fileType = "pdf";
-
                                   });
-
                                 },
                               ),
-                              Text(".pdf", style: TextStyle(
-                                  fontWeight: FontWeight.bold
-                              ),),
+                              Text(
+                                ".pdf",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                         ],
@@ -170,13 +199,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   setState(() {
                                     type = value;
                                     fileType = "png";
-
                                   });
                                 },
                               ),
-                              Text(".png", style: TextStyle(
-                                  fontWeight: FontWeight.bold
-                              ),),
+                              Text(
+                                ".png",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                           Row(
@@ -188,13 +217,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   setState(() {
                                     type = value;
                                     fileType = "mp3";
-
                                   });
                                 },
                               ),
-                              Text(".mp3", style: TextStyle(
-                                  fontWeight: FontWeight.bold
-                              ),),
+                              Text(
+                                ".mp3",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                         ],
@@ -211,13 +240,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   setState(() {
                                     type = value;
                                     fileType = "mp4";
-
                                   });
                                 },
                               ),
-                              Text(".mp4",  style: TextStyle(
-                                fontWeight: FontWeight.bold
-                              ),),
+                              Text(
+                                ".mp4",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                         ],
@@ -229,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   //endregion download image
-  Future<void> downloadFile(String downlaodLink, String file_name, String fileType) async {
+  Future<void> downloadFile(String link, String name, String fileType) async {
     Dio dio = Dio();
 
     try {
@@ -239,7 +268,7 @@ class _MyHomePageState extends State<MyHomePage> {
         isInitializingMemory = true;
       });*/
 
-      await dio.download(downlaodLink, "$externalDirectoryPath/$file_name.$fileType", onReceiveProgress: (rec, total) {
+      await dio.download(link, "$externalDirectoryPath/$name.$fileType", onReceiveProgress: (rec, total) {
         print("Rec: $rec,  Total: $total");
         setState(() {
           downloading = true;
@@ -252,7 +281,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     setState(() {
       downloading = false;
-      progress = "Download is completed";
+      downloadLink.text = "";
+      file_name.text = "";
     });
   }
 
